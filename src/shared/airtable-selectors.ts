@@ -34,6 +34,32 @@ export const AIRTABLE_SELECTORS: Record<string, string[]> = {
     "[data-testid='add-record-button']",
     ".addRecordButton",
   ],
+  // Form-specific selectors
+  "form-field": [
+    ".formFieldAndSubmitContainer input",
+    ".formFieldAndSubmitContainer textarea",
+    ".formFieldAndSubmitContainer select",
+    ".formFieldAndSubmitContainer [role='combobox']",
+    ".formFieldAndSubmitContainer [role='listbox']",
+  ],
+  "form-submit-button": [
+    ".formSubmitButton",
+    "button[type='submit']",
+    ".formFieldAndSubmitContainer button[data-testid='submit-button']",
+  ],
+  "form-field-label": [
+    ".formFieldLabel",
+    ".formFieldAndSubmitContainer label",
+  ],
+  "form-attachment": [
+    ".formFieldAndSubmitContainer .attachmentDropzone",
+    ".formFieldAndSubmitContainer [data-testid='attachment-dropzone']",
+    "input[type='file']",
+  ],
+  "form-select-option": [
+    ".formFieldAndSubmitContainer [role='option']",
+    ".formFieldAndSubmitContainer .selectOption",
+  ],
 };
 
 /**

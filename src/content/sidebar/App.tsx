@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import type { InterfaceState, SOP } from "../../shared/types";
 import { getSOPs, getActiveSOPId, saveSOPs } from "../../shared/storage";
+import { resolveSelector } from "../../shared/airtable-selectors";
+import { clearOverlays, showOverlay } from "../overlay";
 import GuideTab from "./tabs/GuideTab";
 import ChatTab from "./tabs/ChatTab";
 import LibraryTab from "./tabs/LibraryTab";
@@ -16,6 +18,12 @@ const App: React.FC<AppProps> = ({ interfaceState }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [activeSop, setActiveSop] = useState<SOP | null>(null);
   const [sops, setSops] = useState<SOP[]>([]);
+  const activeSopRef = useRef<SOP | null>(null);
+
+  // Keep ref in sync for click handler
+  useEffect(() => {
+    activeSopRef.current = activeSop;
+  }, [activeSop]);
 
   useEffect(() => {
     loadData();
@@ -30,17 +38,100 @@ const App: React.FC<AppProps> = ({ interfaceState }) => {
     }
   };
 
-  const handleToggleStep = async (stepNumber: number) => {
-    if (!activeSop) return;
-    const updatedSteps = activeSop.steps.map((s) =>
+  const handleToggleStep = useCallback(async (stepNumber: number) => {
+    const sop = activeSopRef.current;
+    if (!sop) return;
+    const updatedSteps = sop.steps.map((s) =>
       s.stepNumber === stepNumber ? { ...s, completed: !s.completed } : s
     );
-    const updatedSop = { ...activeSop, steps: updatedSteps, updatedAt: Date.now() };
-    const updatedSops = sops.map((s) => (s.id === updatedSop.id ? updatedSop : s));
+    const updatedSop = { ...sop, steps: updatedSteps, updatedAt: Date.now() };
     setActiveSop(updatedSop);
-    setSops(updatedSops);
-    await saveSOPs(updatedSops);
-  };
+    setSops((prev) => {
+      const updated = prev.map((s) => (s.id === updatedSop.id ? updatedSop : s));
+      saveSOPs(updated);
+      return updated;
+    });
+  }, []);
+
+  const completeStep = useCallback(async (stepNumber: number) => {
+    const sop = activeSopRef.current;
+    if (!sop) return;
+    const step = sop.steps.find((s) => s.stepNumber === stepNumber);
+    if (!step || step.completed) return;
+    const updatedSteps = sop.steps.map((s) =>
+      s.stepNumber === stepNumber ? { ...s, completed: true } : s
+    );
+    const updatedSop = { ...sop, steps: updatedSteps, updatedAt: Date.now() };
+    setActiveSop(updatedSop);
+    setSops((prev) => {
+      const updated = prev.map((s) => (s.id === updatedSop.id ? updatedSop : s));
+      saveSOPs(updated);
+      return updated;
+    });
+
+    // Auto-highlight the next incomplete step
+    const nextStep = updatedSteps.find((s) => !s.completed);
+    if (nextStep?.targetSelector) {
+      setTimeout(() => {
+        showOverlay(nextStep.targetSelector!, `Step ${nextStep.stepNumber}: ${nextStep.title}`);
+      }, 500);
+    } else {
+      clearOverlays();
+    }
+  }, []);
+
+  // Click detection for auto-completion
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      const sop = activeSopRef.current;
+      if (!sop) return;
+
+      const currentStep = sop.steps.find((s) => !s.completed);
+      if (!currentStep?.targetSelector) return;
+
+      const targetEl = resolveSelector(currentStep.targetSelector);
+      if (!targetEl) return;
+
+      const clickedEl = e.target as Element;
+
+      // Check if the user clicked on or within the target element
+      if (targetEl.contains(clickedEl) || clickedEl.contains(targetEl) || targetEl === clickedEl) {
+        completeStep(currentStep.stepNumber);
+      }
+    };
+
+    // Listen on the document with capture to catch clicks before Airtable handlers
+    document.addEventListener("click", handleClick, true);
+    return () => document.removeEventListener("click", handleClick, true);
+  }, [completeStep]);
+
+  // Also watch for DOM changes that indicate step completion (e.g., form field populated)
+  useEffect(() => {
+    const sop = activeSopRef.current;
+    if (!sop) return;
+
+    const currentStep = sop.steps.find((s) => !s.completed);
+    if (!currentStep?.targetSelector) return;
+
+    // Watch for input/change events on the target element
+    const targetEl = resolveSelector(currentStep.targetSelector);
+    if (!targetEl) return;
+
+    const handleInput = () => {
+      // Small delay to let the value settle
+      setTimeout(() => {
+        completeStep(currentStep.stepNumber);
+      }, 300);
+    };
+
+    targetEl.addEventListener("input", handleInput);
+    targetEl.addEventListener("change", handleInput);
+
+    return () => {
+      targetEl.removeEventListener("input", handleInput);
+      targetEl.removeEventListener("change", handleInput);
+    };
+  }, [activeSop, completeStep]);
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "guide", label: "Guide" },
