@@ -1,0 +1,7 @@
+/* Popup styles — kept minimal since popup uses inline styles */
+body {
+  width: 360px;
+  min-height: 200px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #1e293b;
+}

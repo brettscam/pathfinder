@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Pathfinder — AI Airtable Guide",
+  "version": "1.0.0",
+  "description": "AI-powered in-app guidance for Airtable. Paste a Loom link, get an interactive walkthrough.",
+  "permissions": ["activeTab", "storage", "scripting"],
+  "host_permissions": ["*://*.airtable.com/*"],
+  "background": {
+    "service_worker": "src/background/service-worker.ts",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.airtable.com/*"],
+      "js": ["src/content/index.tsx"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "src/popup/index.html",
+    "default_icon": {
+      "16": "public/icons/icon-16.png",
+      "48": "public/icons/icon-48.png",
+      "128": "public/icons/icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "public/icons/icon-16.png",
+    "48": "public/icons/icon-48.png",
+    "128": "public/icons/icon-128.png"
+  }
+}
