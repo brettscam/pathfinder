@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { InterfaceState, SOP } from "../../shared/types";
-import { getSOPs, getActiveSOPId } from "../../shared/storage";
+import { getSOPs, getActiveSOPId, saveSOPs } from "../../shared/storage";
 import GuideTab from "./tabs/GuideTab";
 import ChatTab from "./tabs/ChatTab";
 import LibraryTab from "./tabs/LibraryTab";
@@ -28,6 +28,18 @@ const App: React.FC<AppProps> = ({ interfaceState }) => {
     if (activeId) {
       setActiveSop(allSops.find((s) => s.id === activeId) ?? null);
     }
+  };
+
+  const handleToggleStep = async (stepNumber: number) => {
+    if (!activeSop) return;
+    const updatedSteps = activeSop.steps.map((s) =>
+      s.stepNumber === stepNumber ? { ...s, completed: !s.completed } : s
+    );
+    const updatedSop = { ...activeSop, steps: updatedSteps, updatedAt: Date.now() };
+    const updatedSops = sops.map((s) => (s.id === updatedSop.id ? updatedSop : s));
+    setActiveSop(updatedSop);
+    setSops(updatedSops);
+    await saveSOPs(updatedSops);
   };
 
   const tabs: { key: Tab; label: string }[] = [
@@ -79,7 +91,7 @@ const App: React.FC<AppProps> = ({ interfaceState }) => {
         {/* Tab content */}
         <div className="flex-1 overflow-y-auto">
           {activeTab === "guide" && (
-            <GuideTab sop={activeSop} interfaceState={interfaceState} />
+            <GuideTab sop={activeSop} interfaceState={interfaceState} onToggleStep={handleToggleStep} />
           )}
           {activeTab === "chat" && (
             <ChatTab sop={activeSop} interfaceState={interfaceState} />

@@ -6,9 +6,10 @@ import ProgressBar from "../components/ProgressBar";
 interface GuideTabProps {
   sop: SOP | null;
   interfaceState: InterfaceState;
+  onToggleStep: (stepNumber: number) => void;
 }
 
-const GuideTab: React.FC<GuideTabProps> = ({ sop }) => {
+const GuideTab: React.FC<GuideTabProps> = ({ sop, onToggleStep }) => {
   if (!sop) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-6 text-center text-pathfinder-text-muted">
@@ -31,7 +32,11 @@ const GuideTab: React.FC<GuideTabProps> = ({ sop }) => {
       <ProgressBar current={completedCount} total={sop.steps.length} />
       <div className="mt-3 space-y-2">
         {sop.steps.map((step) => (
-          <StepCard key={step.stepNumber} step={step} />
+          <StepCard
+            key={step.stepNumber}
+            step={step}
+            onToggleComplete={onToggleStep}
+          />
         ))}
       </div>
     </div>
