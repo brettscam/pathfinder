@@ -11,9 +11,7 @@ export default defineConfig({
   plugins: [
     webExtension({
       manifest: "manifest.json",
-      additionalInputs: {
-        scripts: ["src/content/index.tsx"],
-      },
+      additionalInputs: ["src/content/index.tsx"],
     }),
   ],
   build: {
